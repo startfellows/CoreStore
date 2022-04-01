@@ -100,7 +100,7 @@ extension DiffableDataSource {
 
 
         // MARK: - UICollectionViewDataSource
-
+        #if swift(>=5.5)
         @objc
         @MainActor
         public dynamic func numberOfSections(
@@ -156,6 +156,60 @@ extension DiffableDataSource {
             }
             return view
         }
+        
+        #else
+        @objc
+        public dynamic func numberOfSections(
+            in collectionView: UICollectionView
+        ) -> Int {
+
+            return self.numberOfSections()
+        }
+
+        @objc
+        public dynamic func collectionView(
+            _ collectionView: UICollectionView,
+            numberOfItemsInSection section: Int
+        ) -> Int {
+
+            return self.numberOfItems(inSection: section) ?? 0
+        }
+
+        @objc
+        open dynamic func collectionView(
+            _ collectionView: UICollectionView,
+            cellForItemAt indexPath: IndexPath
+        ) -> UICollectionViewCell {
+
+            guard let objectID = self.itemID(for: indexPath) else {
+
+                Internals.abort("Object at \(Internals.typeName(IndexPath.self)) \(indexPath) already removed from list")
+            }
+            guard let object = self.dataStack.fetchExisting(objectID) as O? else {
+
+                Internals.abort("Object at \(Internals.typeName(IndexPath.self)) \(indexPath) has been deleted")
+            }
+            guard let cell = self.cellProvider(collectionView, indexPath, object) else {
+
+                Internals.abort("\(Internals.typeName(UICollectionViewDataSource.self)) returned a `nil` cell for \(Internals.typeName(IndexPath.self)) \(indexPath)")
+            }
+            return cell
+        }
+
+        @objc
+        open dynamic func collectionView(
+            _ collectionView: UICollectionView,
+            viewForSupplementaryElementOfKind kind: String,
+            at indexPath: IndexPath
+        ) -> UICollectionReusableView {
+
+            guard let view = self.supplementaryViewProvider(collectionView, kind, indexPath) else {
+
+                return UICollectionReusableView()
+            }
+            return view
+        }
+        #endif
 
 
         // MARK: Private

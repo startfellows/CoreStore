@@ -104,7 +104,7 @@ extension DiffableDataSource {
         
         
         // MARK: - UITableViewDataSource
-
+        #if swift(>=5.5)
         @objc
         @MainActor
         public dynamic func numberOfSections(in tableView: UITableView) -> Int {
@@ -211,7 +211,105 @@ extension DiffableDataSource {
             
             return index
         }
+        #else
+        @objc
+        public dynamic func numberOfSections(in tableView: UITableView) -> Int {
+            
+            return self.numberOfSections()
+        }
 
+        @objc
+        public dynamic func tableView(
+            _ tableView: UITableView,
+            numberOfRowsInSection section: Int
+        ) -> Int {
+            
+            return self.numberOfItems(inSection: section) ?? 0
+        }
+
+        @objc
+        open dynamic func tableView(
+            _ tableView: UITableView,
+            titleForHeaderInSection section: Int
+        ) -> String? {
+            
+            return self.sectionID(for: section)
+        }
+
+        @objc
+        open dynamic func tableView(
+            _ tableView: UITableView,
+            titleForFooterInSection section: Int
+        ) -> String? {
+            
+            return nil
+        }
+        
+        @objc
+        open dynamic func tableView(
+            _ tableView: UITableView,
+            cellForRowAt indexPath: IndexPath
+        ) -> UITableViewCell {
+            
+            guard let objectID = self.itemID(for: indexPath) else {
+                
+                Internals.abort("Object at \(Internals.typeName(IndexPath.self)) \(indexPath) already removed from list")
+            }
+            guard let object = self.dataStack.fetchExisting(objectID) as O? else {
+                
+                Internals.abort("Object at \(Internals.typeName(IndexPath.self)) \(indexPath) has been deleted")
+            }
+            guard let cell = self.cellProvider(tableView, indexPath, object) else {
+                
+                Internals.abort("\(Internals.typeName(UITableViewDataSource.self)) returned a `nil` cell for \(Internals.typeName(IndexPath.self)) \(indexPath)")
+            }
+            return cell
+        }
+
+        @objc
+        open dynamic func tableView(
+            _ tableView: UITableView,
+            canEditRowAt indexPath: IndexPath
+        ) -> Bool {
+
+            return true
+        }
+
+        @objc
+        open dynamic func tableView(
+            _ tableView: UITableView,
+            editingStyleForRowAt indexPath: IndexPath
+        ) -> UITableViewCell.EditingStyle {
+
+            return .delete
+        }
+
+        @objc
+        open dynamic func tableView(
+            _ tableView: UITableView,
+            commit editingStyle: UITableViewCell.EditingStyle,
+            forRowAt indexPath: IndexPath
+        ) {}
+        
+        @objc
+        open dynamic func sectionIndexTitles(
+            for tableView: UITableView
+        ) -> [String]? {
+            
+            return nil
+        }
+        
+        @objc
+        open dynamic func tableView(
+            _ tableView: UITableView,
+            sectionForSectionIndexTitle title: String,
+            at index: Int
+        ) -> Int {
+            
+            return index
+        }
+        
+        #endif
 
         // MARK: Private
         
